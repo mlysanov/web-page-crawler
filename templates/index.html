@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Web Crawler</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .search-container {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #query {
+            flex: 1;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        #depth {
+            width: 80px;
+            padding: 10px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            background-color: #007BFF;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #result {
+            margin-top: 20px;
+            color: #333;
+            text-align: left;
+            padding: 10px;
+            background: #fefefe;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        #result a {
+            display: block;
+            color: #007BFF;
+            text-decoration: none;
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+
+        #result a:hover {
+            text-decoration: underline;
+        }
+
+        .error-link {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="search-container">
+        <input type="text" id="query" placeholder="Enter URL">
+        <input type="number" id="depth" placeholder="Depth" value="2" min="1">
+        <button onclick="search()">Crawl</button>
+    </div>
+    <div id="result"></div>
+</div>
+
+<script>
+    let eventSource = null;
+
+    function search() {
+        const query = document.getElementById('query').value;
+        const depth = document.getElementById('depth').value || 2;
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = '';
+
+        if (eventSource) {
+            eventSource.close();
+        }
+
+        eventSource = new EventSource(`/crawl?query=${encodeURIComponent(query)}&depth=${encodeURIComponent(depth)}`);
+
+        eventSource.onmessage = function (event) {
+            const data = event.data;
+
+            if (data.startsWith("ERROR:")) {
+                const errorLink = document.createElement('div');
+                errorLink.className = 'error-link';
+                errorLink.textContent = data.substring(6).trim();
+                resultDiv.appendChild(errorLink);
+            } else {
+                const link = data;
+                const linkElement = document.createElement('a');
+                linkElement.href = link;
+                linkElement.target = "_blank";
+                linkElement.textContent = link;
+                resultDiv.appendChild(linkElement);
+            }
+        };
+
+        eventSource.onerror = function () {
+            console.error('Ошибка или завершение работы.');
+            eventSource.close();
+            eventSource = null;
+        };
+    }
+</script>
+</body>
+</html>
